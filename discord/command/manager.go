@@ -29,7 +29,7 @@ func NewCommandManager(l zerolog.Logger, s *discordgo.Session, vm voice.Manager)
 	}
 	ret.shutdownHandlers = append(ret.shutdownHandlers, s.AddHandler(ret.discordHandleMessageCreate))
 
-	// Register command.
+	// Register commands.
 	ret.commands["info"] = new(info.Handler)
 	ret.commands["join"] = &voiceH.JoinHandler{VoiceManager: vm}
 	ret.commands["leave"] = &voiceH.LeaveHandler{VoiceManager: vm}
@@ -103,7 +103,7 @@ func (cm *Manager) error(s *discordgo.Session, m *discordgo.MessageCreate, cmdNa
 			cm.handleFeedback(s, m, cmdName, wrappedErr)
 			return
 		} else if errors.As(err, &userErr) {
-			cm.handleFeedback(s, m, cmdName, wrappedErr)
+			cm.handleFeedback(s, m, cmdName, userErr)
 			return
 		}
 		logEvent = logEvent.Err(rec.(error))
