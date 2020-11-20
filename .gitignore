@@ -20,3 +20,6 @@ mariadb/
 
 .env
 config.json
+
+SelfBot
+selfbot-bot
