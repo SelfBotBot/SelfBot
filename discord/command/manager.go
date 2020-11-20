@@ -5,10 +5,7 @@ import (
 	"fmt"
 	"selfbot/discord/command/handlers"
 	"selfbot/discord/command/handlers/info"
-	"selfbot/discord/command/handlers/join"
-	"selfbot/discord/command/handlers/leave"
-	"selfbot/discord/command/handlers/play"
-	"selfbot/discord/command/handlers/sounds"
+	voiceH "selfbot/discord/command/handlers/voice"
 	"selfbot/discord/feedback"
 	"selfbot/discord/voice"
 
@@ -34,10 +31,10 @@ func NewCommandManager(l zerolog.Logger, s *discordgo.Session, vm voice.Manager)
 
 	// Register command.
 	ret.commands["info"] = new(info.Handler)
-	ret.commands["join"] = &join.Handler{VoiceManager: vm}
-	ret.commands["leave"] = &leave.Handler{VoiceManager: vm}
-	ret.commands["play"] = &play.Handler{VoiceManager: vm}
-	ret.commands["sounds"] = &sounds.Handler{VoiceManager: vm}
+	ret.commands["join"] = &voiceH.JoinHandler{VoiceManager: vm}
+	ret.commands["leave"] = &voiceH.LeaveHandler{VoiceManager: vm}
+	ret.commands["play"] = &voiceH.PlayHandler{VoiceManager: vm}
+	ret.commands["sounds"] = &voiceH.SoundsHandler{VoiceManager: vm}
 
 	return ret, nil
 }

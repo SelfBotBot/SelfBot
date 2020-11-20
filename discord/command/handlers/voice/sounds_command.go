@@ -1,4 +1,4 @@
-package sounds
+package voice
 
 import (
 	"selfbot/discord/command/handlers"
@@ -8,13 +8,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var _ handlers.Handler = &Handler{}
+var _ handlers.Handler = &SoundsHandler{}
 
-type Handler struct {
+type SoundsHandler struct {
 	VoiceManager voice.Manager
 }
 
-func (h *Handler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args ...string) error {
+func (h *SoundsHandler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args ...string) error {
 	writer := discordio.NewMessageWriter(s, m)
 	writer.CodeBlock = false
 
@@ -26,6 +26,6 @@ func (h *Handler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args 
 	return writer.Close()
 }
 
-func (h Handler) ShouldReact() bool {
+func (h SoundsHandler) ShouldReact() bool {
 	return true
 }

@@ -1,4 +1,4 @@
-package play
+package voice
 
 import (
 	"selfbot/discord/command/handlers"
@@ -8,13 +8,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var _ handlers.Handler = &Handler{}
+var _ handlers.Handler = &PlayHandler{}
 
-type Handler struct {
+type PlayHandler struct {
 	VoiceManager voice.Manager
 }
 
-func (h *Handler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args ...string) error {
+func (h *PlayHandler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args ...string) error {
 	if len(args) != 1 {
 		// TODO USAGE
 		return feedback.ErrorSoundNotFound
@@ -27,6 +27,6 @@ func (h *Handler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args 
 	return nil
 }
 
-func (h Handler) ShouldReact() bool {
+func (h PlayHandler) ShouldReact() bool {
 	return false
 }
