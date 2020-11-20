@@ -16,11 +16,6 @@ type Bot struct {
 	Session        *discordgo.Session
 	VoiceManager   voice.Manager
 	CommandManager command.Manager
-
-	//Sounds     map[string][][]byte
-	//Sessions   map[string]*Session
-	//stopping   bool
-	//infoModule *info.InfoModule
 }
 
 func NewBot(l zerolog.Logger, dConf config.Discord) (Bot, error) {
