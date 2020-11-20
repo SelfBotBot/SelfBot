@@ -1,4 +1,4 @@
-package join
+package play
 
 import (
 	"selfbot/discord/command/handlers"

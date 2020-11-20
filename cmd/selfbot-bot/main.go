@@ -9,16 +9,19 @@ import (
 	"selfbot/discord"
 	"strings"
 	"syscall"
+
+	"github.com/rs/zerolog"
 )
 
 func main() {
+	var logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
 
 	var cfg = config.Config{}
 	if err := cfg.Load(); err != nil {
 		panic(err)
 	}
 
-	bot, err := discord.NewBot(cfg.Discord)
+	bot, err := discord.NewBot(logger, cfg.Discord)
 	if err != nil {
 		panic(err)
 	}

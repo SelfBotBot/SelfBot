@@ -2,7 +2,6 @@ package discord
 
 import (
 	"fmt"
-	"os"
 	"selfbot/config"
 	"selfbot/discord/command"
 	"selfbot/discord/voice"
@@ -13,6 +12,7 @@ import (
 )
 
 type Bot struct {
+	l              zerolog.Logger
 	Session        *discordgo.Session
 	VoiceManager   voice.Manager
 	CommandManager command.Manager
@@ -23,8 +23,10 @@ type Bot struct {
 	//infoModule *info.InfoModule
 }
 
-func NewBot(dConf config.Discord) (Bot, error) {
-	var ret = Bot{}
+func NewBot(l zerolog.Logger, dConf config.Discord) (Bot, error) {
+	var ret = Bot{
+		l: l,
+	}
 
 	sesh, err := discordgo.New("Bot " + dConf.Token)
 	if err != nil {
@@ -33,13 +35,13 @@ func NewBot(dConf config.Discord) (Bot, error) {
 	sesh.AddHandler(ret.ready)
 	ret.Session = sesh
 
-	voiceManager, err := voice.NewManager(sesh)
+	voiceManager, err := voice.NewManager(l, sesh)
 	if err != nil {
 		return Bot{}, fmt.Errorf("discord NewBot: %w", err)
 	}
 	ret.VoiceManager = voiceManager
 
-	commandManager, err := command.NewCommandManager(zerolog.New(os.Stdout), sesh, ret.VoiceManager)
+	commandManager, err := command.NewCommandManager(l, sesh, ret.VoiceManager)
 	if err != nil {
 		return Bot{}, fmt.Errorf("discord NewBot: %w", err)
 	}
@@ -54,12 +56,11 @@ func (b *Bot) ready(s *discordgo.Session, _ *discordgo.Ready) {
 
 func (b *Bot) Close() error {
 	if err := b.CommandManager.Close(); err != nil {
-		// TODO nOPE
-		fmt.Println(err)
+		b.l.Error().Err(err).Msg("unable to close command manager.")
 	}
 
 	if err := b.VoiceManager.Close(); err != nil {
-		fmt.Println(err)
+		b.l.Error().Err(err).Msg("unable to close voice manager.")
 	}
 
 	return b.Session.Close()

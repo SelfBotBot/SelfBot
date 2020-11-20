@@ -5,10 +5,13 @@ import (
 	"selfbot/discord/feedback"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 type Manager struct {
+	l                zerolog.Logger
 	Sounds           map[string][][]byte
 	SessionByGuild   map[string]*Session
 	SessionByChannel map[string]*Session
@@ -17,26 +20,30 @@ type Manager struct {
 	shutdownHandlers []func()
 }
 
-func NewManager(s *discordgo.Session) (Manager, error) {
-	var ret = Manager{}
+func NewManager(l zerolog.Logger, s *discordgo.Session) (Manager, error) {
+	var ret = Manager{
+		l:                l.With().Str("owner", "VoiceManager").Logger(),
+		SessionByGuild:   make(map[string]*Session),
+		SessionByChannel: make(map[string]*Session),
+		Sounds:           make(map[string][][]byte),
+	}
 	ret.shutdownHandlers = append(ret.shutdownHandlers, s.AddHandlerOnce(ret.handleVoiceStateUpdate))
 	s.State.TrackVoice = true
 	s.State.TrackMembers = true // TODO get rid of this.
 
-	return Manager{}, nil
+	return ret, nil
 }
 
 func (m *Manager) Join(s *discordgo.Session, guildID string, userID string) error {
-	channelID, err := findUserVoice(s, userID, guildID)
+	channelID, err := findUserVoice(s, guildID, userID)
 	if err != nil {
 		return fmt.Errorf("join voice: %w", err)
 	}
 
 	vs, err := NewSession(s, m, guildID, channelID)
 	if err != nil {
-		//s.ChannelMessageSend(c.ID, "Unable to join VC.\n```"+err.Error()+"```")
 		_ = vs.Stop() // Call this incase we're still alive?
-		return nil
+		return fmt.Errorf("join voice: %w", feedback.Wrap(feedback.ErrorFatalError, err))
 	}
 
 	go vs.StartLoop()
@@ -53,7 +60,7 @@ func (m *Manager) Leave(guildID string) error {
 	}
 
 	if err := sesh.Stop(); err != nil {
-		return fmt.Errorf("leave voice: %w", err)
+		return fmt.Errorf("leave voice: %w", feedback.Wrap(feedback.ErrorFatalError, err))
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-package join
+package sounds
 
 import (
 	"selfbot/discord/command/handlers"

@@ -1,10 +1,15 @@
 package command
 
 import (
+	"errors"
+	"fmt"
 	"selfbot/discord/command/handlers"
 	"selfbot/discord/command/handlers/info"
 	"selfbot/discord/command/handlers/join"
-	feedback2 "selfbot/discord/feedback"
+	"selfbot/discord/command/handlers/leave"
+	"selfbot/discord/command/handlers/play"
+	"selfbot/discord/command/handlers/sounds"
+	"selfbot/discord/feedback"
 	"selfbot/discord/voice"
 
 	"github.com/rs/zerolog"
@@ -22,17 +27,17 @@ type Manager struct {
 
 func NewCommandManager(l zerolog.Logger, s *discordgo.Session, vm voice.Manager) (Manager, error) {
 	var ret = Manager{
+		l:        l.With().Str("owner", "CommandManager").Logger(),
 		commands: make(map[string]handlers.Handler),
-		l:        l.With().Str("owner", "Manager").Logger(),
 	}
-	ret.shutdownHandlers = append(ret.shutdownHandlers, s.AddHandlerOnce(ret.discordHandleMessageCreate))
+	ret.shutdownHandlers = append(ret.shutdownHandlers, s.AddHandler(ret.discordHandleMessageCreate))
 
 	// Register command.
 	ret.commands["info"] = new(info.Handler)
 	ret.commands["join"] = &join.Handler{VoiceManager: vm}
-	ret.commands["leave"] = &join.Handler{VoiceManager: vm}
-	ret.commands["play"] = &join.Handler{VoiceManager: vm}
-	ret.commands["sounds"] = &join.Handler{VoiceManager: vm}
+	ret.commands["leave"] = &leave.Handler{VoiceManager: vm}
+	ret.commands["play"] = &play.Handler{VoiceManager: vm}
+	ret.commands["sounds"] = &sounds.Handler{VoiceManager: vm}
 
 	return ret, nil
 }
@@ -41,7 +46,6 @@ func (cm *Manager) discordHandleMessageCreate(s *discordgo.Session, m *discordgo
 	if m.Author.ID == s.State.User.ID || m.Author.Bot {
 		return
 	}
-
 	isCmd, cmdName, args := processCommand(m.Content)
 	if !isCmd {
 		return
@@ -89,9 +93,22 @@ func (cm *Manager) error(s *discordgo.Session, m *discordgo.MessageCreate, cmdNa
 
 	logEvent := LogDataMessage(cm.l.Error(), m)
 	switch rec.(type) {
-	case feedback2.UserError:
-		// TODO output error message to user.
+	case feedback.UserError, feedback.WrappedUserError:
+		cm.handleFeedback(s, m, cmdName, rec)
+		return
 	case error:
+		var (
+			err        = rec.(error)
+			wrappedErr feedback.WrappedUserError
+			userErr    feedback.UserError
+		)
+		if errors.As(err, &wrappedErr) {
+			cm.handleFeedback(s, m, cmdName, wrappedErr)
+			return
+		} else if errors.As(err, &userErr) {
+			cm.handleFeedback(s, m, cmdName, wrappedErr)
+			return
+		}
 		logEvent = logEvent.Err(rec.(error))
 	default:
 		logEvent = logEvent.Interface("error", rec)
@@ -104,4 +121,22 @@ func (cm *Manager) Close() error {
 		v() // Call shutdown handlers.
 	}
 	return nil
+}
+
+func (cm *Manager) handleFeedback(s *discordgo.Session, m *discordgo.MessageCreate, cmdName string, rec interface{}) {
+	var userErr feedback.UserError
+	var cause error
+
+	if wrappedErr, ok := rec.(feedback.WrappedUserError); ok {
+		userErr = wrappedErr.UserError
+		cause = wrappedErr.Cause
+	} else {
+		userErr = rec.(feedback.UserError)
+	}
+
+	message := userErr.Message
+	if cause != nil {
+		message = fmt.Sprintf("%s \n\t(`%s`)", message, cause)
+	}
+	_, _ = s.ChannelMessageSend(m.ChannelID, message)
 }

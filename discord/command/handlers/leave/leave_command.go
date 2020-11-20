@@ -1,4 +1,4 @@
-package join
+package leave
 
 import (
 	"selfbot/discord/command/handlers"
