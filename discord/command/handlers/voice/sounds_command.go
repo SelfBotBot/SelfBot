@@ -18,7 +18,7 @@ func (h *SoundsHandler) Handle(s *discordgo.Session, m *discordgo.MessageCreate,
 	writer := discordio.NewMessageWriter(s, m)
 	writer.CodeBlock = false
 
-	writer.Write([]byte("Here's a list of available sounds!"))
+	writer.Write([]byte("Here's a list of available sound_files!"))
 	for _, v := range h.VoiceManager.ListSounds() {
 		writer.Write([]byte("`/play " + v + "`"))
 	}

@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"selfbot/config"
 	"selfbot/discord"
-	"strings"
 	"syscall"
 
 	"github.com/rs/zerolog"
@@ -24,20 +22,6 @@ func main() {
 	bot, err := discord.NewBot(logger, cfg.Discord)
 	if err != nil {
 		panic(err)
-	}
-
-	files, err := ioutil.ReadDir("./")
-	if err != nil {
-		panic(err)
-	}
-
-	for _, f := range files {
-		if strings.HasSuffix(f.Name(), ".dca") {
-			if err := bot.VoiceManager.LoadSound(f.Name(), f.Name()[0:len(f.Name())-4]); err != nil {
-				fmt.Println("Unable to load "+f.Name()+", ", err)
-				continue
-			}
-		}
 	}
 
 	if err := bot.Session.Open(); err != nil {

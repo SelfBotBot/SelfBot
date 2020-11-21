@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"os"
+	"time"
 
 	"github.com/satori/go.uuid"
 )
@@ -21,6 +22,7 @@ type Config struct {
 	MySQL        MySQL        `json:"mysql"`
 	Redis        Redis        `json:"redis"`
 	Web          Web          `json:"web"`
+	OwO          OwO          `json:"owo"`
 }
 
 // Redis configures redis.
@@ -63,6 +65,11 @@ type Web struct {
 	DomainNames      []string `json:"domain_names"`
 	AlexaAppID       string   `json:"alexa_app_id"`
 	LogDirectory     string   `json:"log_directory"`
+}
+
+type OwO struct {
+	UploadURL string        `json:"upload_url"`
+	Timeout   time.Duration `json:"timeout"`
 }
 
 // DefaultConfig the default configuration to save.
@@ -127,5 +134,4 @@ func (c *Config) Load() error {
 	}
 
 	return nil
-
 }

@@ -31,7 +31,7 @@ func NewCommandManager(l zerolog.Logger, s *discordgo.Session, vm voice.Manager)
 	ret.commands["join"] = &voiceH.JoinHandler{VoiceManager: vm}
 	ret.commands["leave"] = &voiceH.LeaveHandler{VoiceManager: vm}
 	ret.commands["play"] = &voiceH.PlayHandler{VoiceManager: vm}
-	ret.commands["sounds"] = &voiceH.SoundsHandler{VoiceManager: vm}
+	ret.commands["sound_files"] = &voiceH.SoundsHandler{VoiceManager: vm}
 
 	return ret, nil
 }

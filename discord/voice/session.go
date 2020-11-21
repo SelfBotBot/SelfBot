@@ -104,7 +104,7 @@ func (v *Session) Stop() error {
 	if v.connection.Ready {
 		//Broadcast "Goodbye".
 		v.setSpeaking(true)
-		for _, data := range goodbye {
+		for _, data := range Goodbye {
 			v.connection.OpusSend <- data
 		}
 		v.setSpeaking(false)
