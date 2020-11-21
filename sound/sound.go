@@ -1,4 +1,4 @@
-package sounds
+package sound
 
 import (
 	"encoding/binary"
@@ -19,7 +19,7 @@ type Sound struct {
 	Archived  bool
 }
 
-func SoundDataRead(reader io.Reader) (ret [][]byte, err error) {
+func DataRead(reader io.Reader) (ret [][]byte, err error) {
 	for {
 		var opusLen int16
 		err = binary.Read(reader, binary.LittleEndian, &opusLen)
@@ -39,7 +39,7 @@ func SoundDataRead(reader io.Reader) (ret [][]byte, err error) {
 	}
 }
 
-func SoundDataWrite(data [][]byte, w io.Writer) (err error) {
+func DataWrite(data [][]byte, w io.Writer) (err error) {
 	for _, v := range data {
 		err = binary.Write(w, binary.LittleEndian, int16(len(v)))
 		if err != nil {

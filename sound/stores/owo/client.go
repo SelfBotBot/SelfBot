@@ -8,7 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"selfbot/sounds"
+	"selfbot/sound"
 )
 
 type Client struct {
@@ -91,7 +91,7 @@ func (c *Client) LoadSoundData(url string) (soundData [][]byte, err error) {
 	}
 
 	defer resp.Body.Close()
-	soundData, err = sounds.SoundDataRead(resp.Body)
+	soundData, err = sound.DataRead(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("load sound data: %w", err)
 	}

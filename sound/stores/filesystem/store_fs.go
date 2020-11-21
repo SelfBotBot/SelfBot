@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"selfbot/sounds"
+	"selfbot/sound"
 	"strings"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
 )
 
-var _ sounds.SoundStore = new(Store)
+var _ sound.SoundStore = new(Store)
 
 type Store struct {
 	soundsFolder string
@@ -22,6 +22,7 @@ type Store struct {
 func New(soundsFolder string) (*Store, error) {
 	ret := &Store{
 		soundsFolder: soundsFolder,
+		soundNames:   make(map[uuid.UUID]string),
 	}
 
 	files, err := ioutil.ReadDir(ret.soundsFolder)
@@ -38,29 +39,31 @@ func New(soundsFolder string) (*Store, error) {
 	return ret, nil
 }
 
-func (s *Store) SaveSound(sound *sounds.Sound) (soundID uuid.UUID, err error) {
+func (s *Store) SaveSound(sound *sound.Sound) (soundID uuid.UUID, err error) {
 	return uuid.Nil, errors.New("unimplemented: saving sounds for filesystem isn't supported")
 }
 
-func (s *Store) LoadSound(soundID uuid.UUID) (sound sounds.Sound, err error) {
+func (s *Store) LoadSound(soundID uuid.UUID) (soundInfo sound.Sound, err error) {
 	soundData, err := readSoundFile(s.soundNames[soundID] + ".dca")
 	if err != nil {
-		return sounds.Sound{}, fmt.Errorf("load sound: %w", err)
+		return sound.Sound{}, fmt.Errorf("load sound: %w", err)
 	}
 
-	return sounds.Sound{
+	return sound.Sound{
 		ID:        soundID,
+		Name:      s.soundNames[soundID],
+		UserID:    "416717866411360258",
 		CreatedAt: time.Now(),
 		Data:      soundData,
 	}, nil
 }
 
-func (s *Store) ListSounds(listOptions sounds.ListOptions) (listResponse sounds.ListResponse, err error) {
+func (s *Store) ListSounds(listOptions sound.ListOptions) (listResponse sound.ListResponse, err error) {
 	var keys []uuid.UUID
 	for k := range s.soundNames {
 		keys = append(keys, k)
 	}
-	return sounds.ListResponse{
+	return sound.ListResponse{
 		SoundIDs: keys,
 	}, nil
 }
@@ -72,8 +75,8 @@ func readSoundFile(fileName string) ([][]byte, error) {
 	}
 
 	defer file.Close()
-	ret, err := sounds.SoundDataRead(file)
-	if ret != nil {
+	ret, err := sound.DataRead(file)
+	if err != nil {
 		return nil, fmt.Errorf("read sound file: %w", err)
 	}
 

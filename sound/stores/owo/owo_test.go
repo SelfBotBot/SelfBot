@@ -3,7 +3,7 @@ package owo
 import (
 	"net/http"
 	"selfbot/discord/voice"
-	"selfbot/sounds"
+	"selfbot/sound"
 	"testing"
 	"time"
 
@@ -18,7 +18,7 @@ func TestBlah(t *testing.T) {
 		},
 	}
 
-	owoStore.SaveSound(&sounds.Sound{
+	owoStore.SaveSound(&sound.Sound{
 		ID:        uuid.Must(uuid.NewV4()),
 		Name:      "blah",
 		Data:      voice.Goodbye,

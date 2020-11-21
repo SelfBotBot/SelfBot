@@ -3,6 +3,7 @@ package voice
 import (
 	"fmt"
 	"selfbot/discord/feedback"
+	"selfbot/sound"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -20,7 +21,7 @@ type Manager struct {
 	shutdownHandlers []func()
 }
 
-func NewManager(l zerolog.Logger, s *discordgo.Session) (Manager, error) {
+func NewManager(l zerolog.Logger, s *discordgo.Session, soundStore sound.SoundStore) (Manager, error) {
 	var ret = Manager{
 		l:                l.With().Str("owner", "VoiceManager").Logger(),
 		SessionByGuild:   make(map[string]*Session),
@@ -30,6 +31,22 @@ func NewManager(l zerolog.Logger, s *discordgo.Session) (Manager, error) {
 	ret.shutdownHandlers = append(ret.shutdownHandlers, s.AddHandlerOnce(ret.handleVoiceStateUpdate))
 	s.State.TrackVoice = true
 	s.State.TrackMembers = true // TODO get rid of this.
+
+	resp, err := soundStore.ListSounds(sound.ListOptions{})
+	if err != nil {
+		return Manager{}, fmt.Errorf("voice manager: new manager %w", err)
+	}
+
+	for _, v := range resp.SoundIDs {
+		loaded, err := soundStore.LoadSound(v)
+		if err != nil {
+			ret.l.Err(err).Str("uuid", v.String()).Msg("unable to load sound.")
+			continue
+		}
+
+		ret.l.Info().Str("name", loaded.Name).Msg("loaded sound.")
+		ret.Sounds[loaded.Name] = loaded.Data
+	}
 
 	return ret, nil
 }
@@ -66,7 +83,7 @@ func (m *Manager) Leave(guildID string) error {
 }
 
 func (m *Manager) Play(guildID, soundName string) error {
-	sound, ok := m.Sounds[soundName]
+	s, ok := m.Sounds[soundName]
 	if !ok {
 		return feedback.ErrorSoundNotFound
 	}
@@ -75,7 +92,7 @@ func (m *Manager) Play(guildID, soundName string) error {
 	if !ok {
 		return feedback.ErrorNotInVoice
 	}
-	ses.SetBuffer(sound)
+	ses.SetBuffer(s)
 	return nil
 }
 

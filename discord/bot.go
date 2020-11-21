@@ -5,6 +5,7 @@ import (
 	"selfbot/config"
 	"selfbot/discord/command"
 	"selfbot/discord/voice"
+	"selfbot/sound/stores/filesystem"
 
 	"github.com/rs/zerolog"
 
@@ -30,7 +31,12 @@ func NewBot(l zerolog.Logger, dConf config.Discord) (Bot, error) {
 	sesh.AddHandler(ret.ready)
 	ret.Session = sesh
 
-	voiceManager, err := voice.NewManager(l, sesh)
+	soundStore, err := filesystem.New("./")
+	if err != nil {
+		return Bot{}, fmt.Errorf("discord NewBot: soundstore init: %w", err)
+	}
+
+	voiceManager, err := voice.NewManager(l, sesh, soundStore)
 	if err != nil {
 		return Bot{}, fmt.Errorf("discord NewBot: %w", err)
 	}

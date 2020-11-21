@@ -1,7 +1,7 @@
 package owo
 
 import (
-	"selfbot/sounds"
+	"selfbot/sound"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -16,7 +16,7 @@ type StoredSound struct {
 	OwoURL string
 }
 
-func (s *StoredSound) FromSound(sound sounds.Sound) {
+func (s *StoredSound) FromSound(sound sound.Sound) {
 	s.ID = sound.ID
 	s.UserID = sound.UserID
 	s.Name = sound.Name
@@ -33,8 +33,8 @@ func (s *StoredSound) FromSound(sound sounds.Sound) {
 	return
 }
 
-func (s *StoredSound) ToSound() sounds.Sound {
-	var ret = sounds.Sound{
+func (s *StoredSound) ToSound() sound.Sound {
+	var ret = sound.Sound{
 		ID:        s.ID,
 		Name:      s.Name,
 		UserID:    s.UserID,

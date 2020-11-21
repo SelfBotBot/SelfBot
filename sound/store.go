@@ -1,4 +1,4 @@
-package sounds
+package sound
 
 import uuid "github.com/satori/go.uuid"
 
