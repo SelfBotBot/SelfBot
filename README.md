@@ -7,7 +7,7 @@ The ultimate soundboard bot with plenty of planned features.
 SelfBot is simple to use, easy to add custom sounds to, ~~with a simple and ergonomic web interface.~~ soon:tm:
 
 ## TODO
-- [ ] Sound management and storage not in fs.
+- [x] Sound management and storage not in fs.
 - [ ] Finish web UI (start v2)
 - [ ] Add proper support for sharding
 - [ ] Redo audio handler (maybe); use locks and what not instead of channels.
