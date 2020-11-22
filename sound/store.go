@@ -2,7 +2,7 @@ package sound
 
 import uuid "github.com/satori/go.uuid"
 
-type SoundStore interface {
+type Store interface {
 	SaveSound(sound *Sound) (soundID uuid.UUID, err error)
 	LoadSound(soundID uuid.UUID) (sound Sound, err error)
 	ListSounds(listOptions ListOptions) (listResponse ListResponse, err error)

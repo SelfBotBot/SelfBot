@@ -19,8 +19,8 @@ type Manager struct {
 	shutdownHandlers []func()
 }
 
-func NewCommandManager(l zerolog.Logger, s *discordgo.Session, vm voice.Manager) (Manager, error) {
-	var ret = Manager{
+func NewCommandManager(l zerolog.Logger, s *discordgo.Session, vm *voice.Manager) (*Manager, error) {
+	var ret = &Manager{
 		l:        l.With().Str("owner", "CommandManager").Logger(),
 		commands: make(map[string]handlers.Handler),
 	}

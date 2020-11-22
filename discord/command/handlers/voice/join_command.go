@@ -10,7 +10,7 @@ import (
 var _ handlers.Handler = &JoinHandler{}
 
 type JoinHandler struct {
-	VoiceManager voice.Manager
+	VoiceManager *voice.Manager
 }
 
 func (h *JoinHandler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args ...string) error {

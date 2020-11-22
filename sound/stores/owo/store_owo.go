@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var _ sound.SoundStore = new(Store)
+var _ sound.Store = new(Store)
 
 type Store struct {
 	client Client
@@ -24,6 +24,7 @@ func NewStore(gorm *gorm.DB, conf config.Config) (*Store, error) {
 		client: Client{
 			UploadURL: conf.OwO.UploadURL,
 			Client:    &http.Client{Timeout: conf.OwO.Timeout},
+			URL:       conf.OwO.URL,
 		},
 	}
 
@@ -64,7 +65,14 @@ func (s *Store) LoadSound(soundID uuid.UUID) (soundInfo sound.Sound, err error) 
 		return sound.Sound{}, fmt.Errorf("owo: load sound: gorm first: %w", err)
 	}
 
-	return ss.ToSound(), nil
+	soundInfo = ss.ToSound()
+
+	soundInfo.Data, err = s.client.LoadSoundData(ss.OwoURL)
+	if err != nil {
+		return sound.Sound{}, fmt.Errorf("owo: load sound: %w", err)
+	}
+
+	return soundInfo, nil
 }
 
 func (s *Store) ListSounds(listOptions sound.ListOptions) (listResponse sound.ListResponse, err error) {

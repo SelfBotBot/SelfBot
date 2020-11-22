@@ -30,7 +30,7 @@ type Redis struct {
 	Network  string `json:"network"`
 	Address  string `json:"address"`
 	Password string `json:"password"`
-	Database string `json:"database"`
+	Database int    `json:"database"`
 	Enabled  bool   `json:"enabled"`
 }
 
@@ -70,6 +70,7 @@ type Web struct {
 type OwO struct {
 	UploadURL string        `json:"upload_url"`
 	Timeout   time.Duration `json:"timeout"`
+	URL       string        `json:"url"`
 }
 
 // DefaultConfig the default configuration to save.
@@ -83,7 +84,7 @@ var DefaultConfig = Config{
 	},
 	Redis: Redis{
 		Enabled:  false,
-		Database: "1",
+		Database: 1,
 		Address:  "127.0.0.1:6379",
 		Network:  "tcp",
 		Password: "password",
@@ -103,6 +104,11 @@ var DefaultConfig = Config{
 		CSPReportWebHook: "https://discordapp.com/webhook/slack",
 		AlexaAppID:       "amzn1.ask.skill.UUIDHERE",
 		DomainNames:      []string{"sb.cory.red"},
+	},
+	OwO: OwO{
+		UploadURL: "https://api.awau.moe/upload/?key=uuid",
+		Timeout:   time.Second * 10,
+		URL:       "https://awau.moe/",
 	},
 }
 

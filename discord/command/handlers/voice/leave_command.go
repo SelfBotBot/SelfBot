@@ -10,7 +10,7 @@ import (
 var _ handlers.Handler = &LeaveHandler{}
 
 type LeaveHandler struct {
-	VoiceManager voice.Manager
+	VoiceManager *voice.Manager
 }
 
 func (h *LeaveHandler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args ...string) error {

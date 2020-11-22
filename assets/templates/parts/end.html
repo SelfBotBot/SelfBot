@@ -1,0 +1,17 @@
+{{define "parts/end.html"}}
+<script src="/js/jquery.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script>
+    window.addEventListener("load",function(){window.cookieconsent.initialise({palette:{popup:{background:"#000"},button:{background:"transparent",text:"#f1d600",border:"#f1d600"}},content:{message:"This website REQUIRES cookies to ensure security and data persistence on our website."}})});
+</script>
+<script>
+    let guild_id = "621077547471601685";
+    function buttonPress(button) {
+        $.ajax({
+            type: "POST",
+            url: "/board/play/" + guild_id + "/" + button.id
+        });
+    }
+</script>
+</html>
+{{end}}

@@ -1,85 +1,113 @@
 package web
 
 import (
-	"context"
 	"fmt"
+	"html/template"
+	"net/http"
 	"selfbot/config"
-	"selfbot/discord"
+	"selfbot/discord/voice"
+	"selfbot/sound"
+	"selfbot/web/easter_egg"
+
+	"github.com/gin-contrib/static"
+
+	"github.com/gorilla/sessions"
 
 	ginzerolog "github.com/dn365/gin-zerolog"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/sessions"
-	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
-	discordOauth "github.com/markbates/goth/providers/discord"
-	"github.com/rbcervilla/redisstore/v8"
 	"github.com/rs/zerolog"
 )
 
 type Server struct {
-	l          zerolog.Logger
-	query      discord.SoundStore
-	redisStore *redisstore.RedisStore
-	e          *gin.Engine
+	l zerolog.Logger
+	e *gin.Engine
+
+	cfg      config.Config
+	launcher ServerLauncher
+	rdb      *redis.Client
+
+	query        sound.Store
+	sessionStore sessions.Store
+	voiceManager *voice.Manager
 }
 
-func NewServer(l zerolog.Logger, rdb *redis.Client, cfg config.Config) (Server, error) {
+// Handler an interface for sections of the site that handle.
+type Handler interface {
+	RegisterHandlers() error
+}
+
+func NewServer(l zerolog.Logger, rdb *redis.Client, cfg config.Config, voiceManager *voice.Manager) (Server, error) {
 	var ret = Server{
-		l: l,
+		l:            l,
+		cfg:          cfg,
+		rdb:          rdb,
+		voiceManager: voiceManager,
 	}
 
-	redisStore, err := redisstore.NewRedisStore(context.Background(), rdb)
-	if err != nil {
-		return Server{}, fmt.Errorf("web NewServer: unable to create redis store: %w", err)
+	ret.launcher = ServerLauncher{
+		s:       &ret,
+		closers: make(map[string]func() error),
 	}
-	ret.redisStore = redisStore
-	ret.redisStore.KeyPrefix("session:")
-	ret.redisStore.Options(sessions.Options{
-		Path:     "/",
-		MaxAge:   86400 * 60,
-		HttpOnly: true,
+	ret.e = gin.New()
+
+	// Load the HTML templates
+	// Templating
+	ret.e.SetFuncMap(template.FuncMap{
+		"comments": func(s string) template.HTML { return template.HTML(s) },
+		"ASCII":    easter_egg.GetAscii,
 	})
+	ret.e.LoadHTMLGlob(cfg.Web.TemplateGlob)
 
-	goth.UseProviders(
-		discordOauth.New(
-			cfg.DiscordOAuth.Key,
-			cfg.DiscordOAuth.Secret,
-			"http://127.0.0.1:8080/auth/discord/callback/",
-			discordOauth.ScopeIdentify,
-			discordOauth.ScopeEmail,
-		),
-	)
+	// Static files to load
+	ret.e.Use(static.Serve("/", static.LocalFile(cfg.Web.StaticFilePath, false)))
 
-	gothic.Store = ret.redisStore
+	ret.e.Use(ginzerolog.Logger("gin"), gin.Recovery())
+	_ = ret.AddPreMiddleware()
+	ret.SetupDiscordOAuth()
 
-	e := gin.New()
-	e.Use(ginzerolog.Logger("gin"), gin.Recovery())
-
-	v1 := e.Group("/api/v1/")
+	v1 := ret.e.Group("/api/v1/")
 	{
-		v1.GET("/tree/:user", ret.v1TreeGETHandle)
-		v1User := v1.Group("/user/:user")
-		{
-			v1User.GET("/", ret.v1UserGETHandle)
-		}
+		//v1.GET("/tree/:user", ret.v1TreeGETHandle)
+		//v1User := v1.Group("/user/:user")
+		//{
+		//	v1User.GET("/", ret.v1UserGETHandle)
+		//}
+		v1.GET("/", func(ctx *gin.Context) {
+			ctx.JSON(http.StatusOK, map[string]string{"working": "true"})
+		})
 	}
 
-	discordAuth := e.Group("/auth/discord")
+	discordAuth := ret.e.Group("/auth/discord")
 	{
 		discordAuth.Use(discordOAuthContextSetter)
 		discordAuth.GET("/", ret.oauthDiscordIndex)
 		discordAuth.GET("/callback", ret.oauthDiscordCallback)
 	}
 
-	ret.e = e
+	pages := &Pages{s: &ret}
+	pages.RegisterHandlers()
+
+	_ = ret.AddPostMiddleware()
+
 	return ret, nil
 }
 
-func (s *Server) Start(listenAddr string) error {
-	return s.e.Run(listenAddr)
+func (s *Server) Start(listenAddr string, tls bool) error {
+	var err error
+	if !tls {
+		err = s.e.Run(listenAddr)
+	} else {
+		err = s.launcher.RunAutoTLS()
+	}
+
+	if err != nil {
+		return fmt.Errorf("web: server start: %w", err)
+	}
+	return nil
 }
 
 func (s *Server) Close() error {
-	return nil // TODO
+	_ = s.launcher.Close() // launcher Close doesn't actually return an error.
+	return nil
 }

@@ -218,10 +218,8 @@ func (p *Handler) buildEmbed(memStats *runtime.MemStats, system bool) *discordgo
 
 		if runtime.NumGoroutine() > 20 || memStats.HeapAlloc >= uint64(float64(memStats.HeapSys)*0.70) {
 			colour = ColourEh
-			fmt.Println("EH!")
 			if memStats.HeapAlloc >= uint64(float64(memStats.HeapSys)*0.80) {
 				colour = ColourBad
-				fmt.Println("BAAD")
 			}
 		}
 

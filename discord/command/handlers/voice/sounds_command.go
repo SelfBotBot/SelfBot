@@ -11,7 +11,7 @@ import (
 var _ handlers.Handler = &SoundsHandler{}
 
 type SoundsHandler struct {
-	VoiceManager voice.Manager
+	VoiceManager *voice.Manager
 }
 
 func (h *SoundsHandler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args ...string) error {

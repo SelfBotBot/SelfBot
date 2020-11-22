@@ -6,35 +6,35 @@ import (
 	"selfbot/sound"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
+
 	"github.com/rs/zerolog"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type Manager struct {
-	l                zerolog.Logger
-	Sounds           map[string][][]byte
-	SessionByGuild   map[string]*Session
-	SessionByChannel map[string]*Session
+	l              zerolog.Logger
+	Sounds         map[uuid.UUID]sound.Sound
+	SessionByGuild map[string]*Session
 
 	stopping         bool
 	shutdownHandlers []func()
 }
 
-func NewManager(l zerolog.Logger, s *discordgo.Session, soundStore sound.SoundStore) (Manager, error) {
-	var ret = Manager{
-		l:                l.With().Str("owner", "VoiceManager").Logger(),
-		SessionByGuild:   make(map[string]*Session),
-		SessionByChannel: make(map[string]*Session),
-		Sounds:           make(map[string][][]byte),
+func NewManager(l zerolog.Logger, s *discordgo.Session, soundStore sound.Store) (*Manager, error) {
+	var ret = &Manager{
+		l:              l.With().Str("owner", "VoiceManager").Logger(),
+		SessionByGuild: make(map[string]*Session),
+		Sounds:         make(map[uuid.UUID]sound.Sound),
 	}
-	ret.shutdownHandlers = append(ret.shutdownHandlers, s.AddHandlerOnce(ret.handleVoiceStateUpdate))
+	ret.shutdownHandlers = append(ret.shutdownHandlers, s.AddHandler(ret.handleVoiceStateUpdate))
 	s.State.TrackVoice = true
 	s.State.TrackMembers = true // TODO get rid of this.
 
 	resp, err := soundStore.ListSounds(sound.ListOptions{})
 	if err != nil {
-		return Manager{}, fmt.Errorf("voice manager: new manager %w", err)
+		return nil, fmt.Errorf("voice manager: new manager %w", err)
 	}
 
 	for _, v := range resp.SoundIDs {
@@ -45,7 +45,7 @@ func NewManager(l zerolog.Logger, s *discordgo.Session, soundStore sound.SoundSt
 		}
 
 		ret.l.Info().Str("name", loaded.Name).Msg("loaded sound.")
-		ret.Sounds[loaded.Name] = loaded.Data
+		ret.Sounds[loaded.ID] = loaded
 	}
 
 	return ret, nil
@@ -64,7 +64,6 @@ func (m *Manager) Join(s *discordgo.Session, guildID string, userID string) erro
 	}
 
 	go vs.StartLoop()
-	m.SessionByChannel[channelID] = vs
 	m.SessionByGuild[guildID] = vs
 	go vs.SetBuffer(welcome)
 	return nil
@@ -73,7 +72,7 @@ func (m *Manager) Join(s *discordgo.Session, guildID string, userID string) erro
 func (m *Manager) Leave(guildID string) error {
 	sesh, ok := m.SessionByGuild[guildID]
 	if !ok {
-		return feedback.ErrorNotInVoice
+		return feedback.ErrorBotNotInVoice
 	}
 
 	if err := sesh.Stop(); err != nil {
@@ -82,7 +81,7 @@ func (m *Manager) Leave(guildID string) error {
 	return nil
 }
 
-func (m *Manager) Play(guildID, soundName string) error {
+func (m *Manager) Play(guildID string, soundName uuid.UUID) error {
 	s, ok := m.Sounds[soundName]
 	if !ok {
 		return feedback.ErrorSoundNotFound
@@ -90,9 +89,9 @@ func (m *Manager) Play(guildID, soundName string) error {
 
 	ses, ok := m.SessionByGuild[guildID]
 	if !ok {
-		return feedback.ErrorNotInVoice
+		return feedback.ErrorBotNotInVoice
 	}
-	ses.SetBuffer(s)
+	ses.SetBuffer(s.Data)
 	return nil
 }
 

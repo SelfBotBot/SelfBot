@@ -98,7 +98,6 @@ func (v *Session) Stop() error {
 
 	// Remove voice session from bot and stop the loop.
 	delete(v.vm.SessionByGuild, v.connection.GuildID)
-	delete(v.vm.SessionByChannel, v.connection.ChannelID)
 	close(v.quit)
 
 	if v.connection.Ready {

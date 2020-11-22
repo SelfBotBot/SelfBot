@@ -3,9 +3,9 @@ package owo
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"selfbot/sound"
@@ -14,6 +14,7 @@ import (
 type Client struct {
 	UploadURL string
 	Client    *http.Client
+	URL       string
 }
 
 func (c *Client) SaveSoundData(soundName string, soundReader io.Reader) (soundURL string, err error) {
@@ -35,7 +36,12 @@ func (c *Client) SaveSoundData(soundName string, soundReader io.Reader) (soundUR
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return "", fmt.Errorf("save sound data: %w", errors.New("non 2xx error code"))
+		data, _ := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		return "", fmt.Errorf(
+			"save sound data: %w",
+			fmt.Errorf("non 2xx error code (%d) %q, %s", resp.StatusCode, resp.Status, string(data)),
+		)
 	}
 
 	dec := json.NewDecoder(resp.Body)
@@ -75,7 +81,7 @@ func (c *Client) createRequestBuffer(soundName string, soundReader io.Reader) (b
 }
 
 func (c *Client) LoadSoundData(url string) (soundData [][]byte, err error) {
-	req, err := http.NewRequest(http.MethodGet, c.UploadURL, nil)
+	req, err := http.NewRequest(http.MethodGet, c.URL+url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("load sound data: new request: %w", err)
 	}
@@ -87,7 +93,12 @@ func (c *Client) LoadSoundData(url string) (soundData [][]byte, err error) {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, fmt.Errorf("load sound data: %w", errors.New("non 2xx error code"))
+		data, _ := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf(
+			"save sound data: %w",
+			fmt.Errorf("non 2xx error code (%d) %q, %s", resp.StatusCode, resp.Status, string(data)),
+		)
 	}
 
 	defer resp.Body.Close()

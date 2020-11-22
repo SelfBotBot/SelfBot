@@ -4,6 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/markbates/goth"
+	discordOauth "github.com/markbates/goth/providers/discord"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/gin-gonic/gin"
 	"github.com/markbates/goth/gothic"
@@ -18,6 +21,20 @@ func discordOAuthContextSetter(ctx *gin.Context) {
 			"discord",
 		),
 	)
+}
+
+func (s *Server) SetupDiscordOAuth() {
+	goth.UseProviders(
+		discordOauth.New(
+			s.cfg.DiscordOAuth.Key,
+			s.cfg.DiscordOAuth.Secret,
+			s.cfg.DiscordOAuth.Callback,
+			discordOauth.ScopeIdentify,
+			discordOauth.ScopeEmail,
+			discordOauth.ScopeGuilds,
+		),
+	)
+	gothic.Store = s.sessionStore
 }
 
 func (s *Server) oauthDiscordIndex(ctx *gin.Context) {

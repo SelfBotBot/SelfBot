@@ -1,0 +1,20 @@
+{{define "pages/board.html"}}
+{{template "parts/head.html" .}}
+<body>
+{{template "parts/navbar.html" .}}
+<div class="container">
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="bs-component">
+                <h3>Set up your board, click the buttons.</h3>
+                {{template "parts/sounds.html" .}}
+            </div>
+        </div>
+    </div>
+
+{{template "parts/footer.html" .}}
+</div>
+</body>
+{{template "parts/end.html" .}}
+{{end}}

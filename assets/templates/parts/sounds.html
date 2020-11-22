@@ -1,0 +1,7 @@
+{{define "parts/sounds.html"}}
+    <ul>
+    {{range $id, $name := .Sounds}}
+        <li><button onclick="buttonPress(this);" name="{{$name}}" value="{{$id}}" id="{{$id}}">{{$name}}</button></li>
+    {{end}}
+    </ul>
+{{end}}

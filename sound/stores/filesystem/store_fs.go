@@ -12,7 +12,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-var _ sound.SoundStore = new(Store)
+var _ sound.Store = new(Store)
 
 type Store struct {
 	soundsFolder string

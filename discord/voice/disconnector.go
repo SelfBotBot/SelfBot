@@ -1,43 +1,55 @@
 package voice
 
 import (
-	"fmt"
-
 	"github.com/bwmarrin/discordgo"
 )
 
 func (m *Manager) handleVoiceStateUpdate(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
-	sesh, ok := m.SessionByChannel[vsu.ChannelID]
+	sesh, ok := m.SessionByGuild[vsu.GuildID]
 	if !ok {
 		return
 	}
 
-	g, err := s.State.Guild(vsu.GuildID)
+	sGuild, err := s.State.Guild(vsu.GuildID)
 	if err != nil {
-		fmt.Printf("%#v\n", s.State.Guilds)
+		m.l.Error().Err(err).Msg("state guild failed")
 		return
 	}
 
-	for _, vs := range g.VoiceStates {
-		// Ignore not this channel
-		// Ignore myself
-		// Ignore deaf
-		if vs.ChannelID != vsu.ChannelID || vs.UserID == s.State.User.ID || vs.Deaf || vs.SelfDeaf {
+	var found = false
+	for _, v := range sGuild.VoiceStates {
+		if v.UserID == vsu.UserID || v.UserID == s.State.User.ID {
 			continue
 		}
 
-		// Ignore bots.
-		if u, err := s.State.Member(vs.GuildID, vs.UserID); err != nil {
-			if err == discordgo.ErrStateNotFound {
-				// TODO do I really want to handle this?
+		member, err := s.State.Member(vsu.GuildID, vsu.UserID)
+		if err == discordgo.ErrStateNotFound || err == discordgo.ErrNilState {
+			m.l.Warn().
+				Str("guild_id", vsu.GuildID).
+				Str("user_id", vsu.UserID).
+				Msg("getting user via api.")
+
+			if st, err := s.User(vsu.UserID); err != nil {
+				m.l.Error().Err(err).Msg("session user failed")
+				continue
+			} else if st.Bot {
+				continue
 			}
+		} else if err != nil {
+			m.l.Error().Err(err).Msg("state member failed")
 			continue
-		} else if u.User.Bot {
+		} else if member.User.Bot {
 			continue
 		}
 
-		return // This is a normal user, we can return.
+		found = true // A user that's not a bot is in the channel.
 	}
 
-	sesh.Stop()
+	if found {
+		return
+	}
+	if err := sesh.Stop(); err != nil {
+		m.l.Error().Err(err).Msg("voice session stop")
+		return
+	}
 }

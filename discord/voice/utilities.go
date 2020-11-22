@@ -12,7 +12,7 @@ func findUserVoice(s *discordgo.Session, guildID string, userID string) (channel
 	if err != nil {
 		return "", fmt.Errorf(
 			"findUserVoice: %w: ",
-			feedback.Wrap(feedback.ErrorNoUserInVoice, err),
+			feedback.Wrap(feedback.ErrorUserNotInVoice, err),
 		)
 	}
 
@@ -22,5 +22,5 @@ func findUserVoice(s *discordgo.Session, guildID string, userID string) (channel
 		}
 	}
 
-	return "", feedback.ErrorNoUserInVoice
+	return "", feedback.ErrorUserNotInVoice
 }
