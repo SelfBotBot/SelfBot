@@ -9,9 +9,12 @@ SelfBot is simple to use, easy to add custom sounds to, ~~with a simple and ergo
 ## TODO
 - [x] Sound management and storage not in fs.
 - [ ] Finish web UI (start v2)
+  - [ ] Custom file uploading.
+  - [ ] Custom file editing?
+  - [ ] HOTKEYS
+- [ ] Write apps and programs for hotkey/mobile phone support.
 - [ ] Add proper support for sharding
 - [ ] Redo audio handler (maybe); use locks and what not instead of channels.
-- [ ] Write apps and programs for hotkey/mobile phone support.
 - [ ] Alexa integration
 - [ ] Google assistant integration
 
