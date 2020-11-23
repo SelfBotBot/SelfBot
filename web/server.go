@@ -3,7 +3,6 @@ package web
 import (
 	"fmt"
 	"html/template"
-	"net/http"
 	"selfbot/config"
 	"selfbot/discord/voice"
 	"selfbot/sound"
@@ -30,6 +29,8 @@ type Server struct {
 	query        sound.Store
 	sessionStore sessions.Store
 	voiceManager *voice.Manager
+
+	closers []func() error
 }
 
 // Handler an interface for sections of the site that handle.
@@ -37,8 +38,8 @@ type Handler interface {
 	RegisterHandlers() error
 }
 
-func NewServer(l zerolog.Logger, rdb *redis.Client, cfg config.Config, voiceManager *voice.Manager) (Server, error) {
-	var ret = Server{
+func NewServer(l zerolog.Logger, rdb *redis.Client, cfg config.Config, voiceManager *voice.Manager) (*Server, error) {
+	var ret = &Server{
 		l:            l,
 		cfg:          cfg,
 		rdb:          rdb,
@@ -46,7 +47,7 @@ func NewServer(l zerolog.Logger, rdb *redis.Client, cfg config.Config, voiceMana
 	}
 
 	ret.launcher = ServerLauncher{
-		s:       &ret,
+		s:       ret,
 		closers: make(map[string]func() error),
 	}
 	ret.e = gin.New()
@@ -64,29 +65,15 @@ func NewServer(l zerolog.Logger, rdb *redis.Client, cfg config.Config, voiceMana
 
 	ret.e.Use(ginzerolog.Logger("gin"), gin.Recovery())
 	_ = ret.AddPreMiddleware()
-	ret.SetupDiscordOAuth()
 
-	v1 := ret.e.Group("/api/v1/")
-	{
-		//v1.GET("/tree/:user", ret.v1TreeGETHandle)
-		//v1User := v1.Group("/user/:user")
-		//{
-		//	v1User.GET("/", ret.v1UserGETHandle)
-		//}
-		v1.GET("/", func(ctx *gin.Context) {
-			ctx.JSON(http.StatusOK, map[string]string{"working": "true"})
-		})
-	}
+	discordOAuthG := &DiscordOAuth{s: ret}
+	discordOAuthG.RegisterHandlers()
 
-	discordAuth := ret.e.Group("/auth/discord")
-	{
-		discordAuth.Use(discordOAuthContextSetter)
-		discordAuth.GET("/", ret.oauthDiscordIndex)
-		discordAuth.GET("/callback", ret.oauthDiscordCallback)
-	}
+	pagesG := &Pages{s: ret}
+	pagesG.RegisterHandlers()
 
-	pages := &Pages{s: &ret}
-	pages.RegisterHandlers()
+	boardG := &Board{s: ret}
+	boardG.RegisterHandlers()
 
 	_ = ret.AddPostMiddleware()
 
@@ -108,6 +95,12 @@ func (s *Server) Start(listenAddr string, tls bool) error {
 }
 
 func (s *Server) Close() error {
+	for _, v := range s.closers {
+		if err := v(); err != nil {
+			s.l.Error().Err(err).Msg("Unable to close closer")
+		}
+	}
+
 	_ = s.launcher.Close() // launcher Close doesn't actually return an error.
 	return nil
 }

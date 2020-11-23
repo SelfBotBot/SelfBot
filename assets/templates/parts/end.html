@@ -4,14 +4,25 @@
 <script>
     window.addEventListener("load",function(){window.cookieconsent.initialise({palette:{popup:{background:"#000"},button:{background:"transparent",text:"#f1d600",border:"#f1d600"}},content:{message:"This website REQUIRES cookies to ensure security and data persistence on our website."}})});
 </script>
+{{if eq .Title "Soundboard"}}
 <script>
-    let guild_id = "621077547471601685";
+    let playSocket = new WebSocket("wss://sb.cory.red/board/ws");;
+    $.ajax({
+        type: "GET",
+        url: "/board/ws/start"
+    }).done(function (data) {
+        if (data === null || data === undefined) playSocket.close(); // Unauthed/error
+        playSocket.send(JSON.stringify(data));
+        console.log(data);
+    });
     function buttonPress(button) {
-        $.ajax({
-            type: "POST",
-            url: "/board/play/" + guild_id + "/" + button.id
-        });
+        playSocket.send(
+            JSON.stringify(
+                {id: button.id}
+            )
+        );
     }
 </script>
+{{end}}
 </html>
 {{end}}

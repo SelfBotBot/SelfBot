@@ -1,6 +1,8 @@
 package viewdata
 
 import (
+	"fmt"
+	"selfbot/web/key"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -82,7 +84,10 @@ func (v ViewData) GetStringDefault(key string, def string) string {
 }
 
 func (v ViewData) HTML(code int, name string) {
-	//v.Set("User", sessions.Default(v.GetContext()).Get("user")) TODO
+	if user, ok := v.GetContext().Get(key.ContextUser); ok {
+		fmt.Println("Set user: ", user)
+		v.Set("User", user)
+	}
 	//v.Set("Token", csrf.GetToken(v.GetContext())) TODO
 	v.Set("GeneratedTime", time.Now().Format(time.RFC822))
 	v.GetContext().HTML(code, name, v)

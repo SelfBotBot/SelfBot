@@ -15,6 +15,7 @@ import (
 
 type Manager struct {
 	l              zerolog.Logger
+	session        *discordgo.Session
 	Sounds         map[uuid.UUID]sound.Sound
 	SessionByGuild map[string]*Session
 
@@ -25,6 +26,7 @@ type Manager struct {
 func NewManager(l zerolog.Logger, s *discordgo.Session, soundStore sound.Store) (*Manager, error) {
 	var ret = &Manager{
 		l:              l.With().Str("owner", "VoiceManager").Logger(),
+		session:        s,
 		SessionByGuild: make(map[string]*Session),
 		Sounds:         make(map[uuid.UUID]sound.Sound),
 	}
@@ -51,13 +53,17 @@ func NewManager(l zerolog.Logger, s *discordgo.Session, soundStore sound.Store) 
 	return ret, nil
 }
 
-func (m *Manager) Join(s *discordgo.Session, guildID string, userID string) error {
-	channelID, err := findUserVoice(s, guildID, userID)
+func (m *Manager) Join(guildID string, userID string) error {
+	if _, ok := m.SessionByGuild[guildID]; ok {
+		return feedback.ErrorAlreadyInVoice
+	}
+
+	channelID, err := findUserVoice(m.session, guildID, userID)
 	if err != nil {
 		return fmt.Errorf("join voice: %w", err)
 	}
 
-	vs, err := NewSession(s, m, guildID, channelID)
+	vs, err := NewSession(m.session, m, guildID, channelID)
 	if err != nil {
 		_ = vs.Stop() // Call this incase we're still alive?
 		return fmt.Errorf("join voice: %w", feedback.Wrap(feedback.ErrorFatalError, err))
@@ -93,6 +99,15 @@ func (m *Manager) Play(guildID string, soundName uuid.UUID) error {
 	}
 	ses.SetBuffer(s.Data)
 	return nil
+}
+
+func (m *Manager) FindUserGuild(userID string, guildIDs []string) (guildID string, err error) {
+	for _, v := range guildIDs {
+		if _, err := m.session.State.Member(v, userID); err == nil {
+			return v, nil
+		}
+	}
+	return "", feedback.ErrorUserNotFound
 }
 
 func (m *Manager) Close() error {

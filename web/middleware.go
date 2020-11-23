@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"selfbot/web/key"
 	"strings"
 	"time"
 
@@ -86,6 +87,26 @@ func (m *Middleware) setupSessions() (err error) {
 	})
 	m.s.sessionStore = redisStore
 
+	m.s.e.Use(func(ctx *gin.Context) {
+		sesh, _ := m.s.sessionStore.Get(ctx.Request, key.SessionCore)
+		for k, v := range sesh.Values {
+			ctx.Set(k.(string), v)
+		}
+
+		ctx.Next()
+
+		// Reload just to ensure we have the latest version.
+		sesh, _ = m.s.sessionStore.Get(ctx.Request, key.SessionCore)
+		for k, v := range ctx.Keys {
+			if key.IsContext(k) {
+				sesh.Values[k] = v
+			}
+		}
+		if err := sesh.Save(ctx.Request, ctx.Writer); err != nil {
+			panic(err)
+		}
+	})
+
 	return nil
 }
 
@@ -156,19 +177,17 @@ func (m *Middleware) setupRegisterRedirect() {
 			return
 		}
 
-		//// TODO sesh
-		//sess, err := m.s.sessionStore.Get(ctx.Request, "login")
-		//if err != nil {
-		//	panic(err)
-		//}
-		//user, ok := sess.Values["user"].(data.User)
-		//if !ok {
+		//userIf, ok1 := ctx.Get(key.ContextUser)
+		//user, ok2 := userIf.(goth.User)
+		//if !ok1 || !ok2 {
 		//	ctx.Next()
 		//	return
 		//}
-		//
+
+		//user.
+		//fmt.Println(user)
 		//if !user.Agreed {
-		//	sess.Set(SessionRedirectKey, path)
+		//	sess.Set(key.ContextRedirect, path)
 		//	ctx.Redirect(302, "/register")
 		//	return
 		//}

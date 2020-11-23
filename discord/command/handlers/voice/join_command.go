@@ -14,7 +14,7 @@ type JoinHandler struct {
 }
 
 func (h *JoinHandler) Handle(s *discordgo.Session, m *discordgo.MessageCreate, args ...string) error {
-	return h.VoiceManager.Join(s, m.GuildID, m.Author.ID)
+	return h.VoiceManager.Join(m.GuildID, m.Author.ID)
 }
 
 func (h *JoinHandler) ShouldReact() bool {
