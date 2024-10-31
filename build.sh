@@ -67,6 +67,4 @@ do
 
     echo "GOOS=$goos GOARCH=$goarch go build -x -o $destination $target"
     GOOS=$goos GOARCH=$goarch go build -o "$destination" "$target"
-    echo -e "=-=-=-=-=-=-=-=-=-=-=-=-=-\\n\\n\\n\\n"
-
 done
